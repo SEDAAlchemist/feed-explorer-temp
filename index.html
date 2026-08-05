@@ -170,7 +170,7 @@ select.field{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg 
 .chk input{appearance:none;width:16px;height:16px;border:1px solid var(--gray-300);border-radius:var(--shape-sm);background:var(--gray-200);position:relative;cursor:pointer;flex:none;transition:background-color .12s,border-color .12s}
 .chk input:hover{border-color:var(--gray-400)}
 .chk input:checked{background:var(--text);border-color:var(--text)}
-.chk input:checked::after{content:"";position:absolute;left:4.5px;top:1.5px;width:4px;height:8px;border:solid var(--on-accent);border-width:0 2px 2px 0;transform:rotate(45deg)}
+.chk input:checked::after{content:"";position:absolute;left:4.5px;top:1.5px;width:4px;height:8px;border:solid var(--on-accent);border-width:0 2px 2px 0;transform:rotate(45deg) scale(.85)}
 .chk .cnt{margin-left:auto;font-size:11px;color:var(--faint)}
 .chk input:indeterminate{background:var(--text);border-color:var(--text)}
 .chk input:indeterminate::after{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:8px;height:2px;background:var(--on-accent);border-radius:1px}
@@ -210,7 +210,9 @@ select.field{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg 
 .stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--shape-sm);padding:9px 14px;min-width:120px}
 .stat .n{font-size:22px;font-weight:500;letter-spacing:-.03em}
 .stat .l{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin-top:1px}
-.stat .n.g{color:var(--green-500)}
+.stat.invert{background:var(--text);border-color:var(--text)}
+.stat.invert .n{color:var(--on-accent)}
+.stat.invert .l{color:#868392}
 
 .tablewrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--shape);overflow:hidden;flex:1;min-height:0;display:flex;flex-direction:column}
 .tscroll{overflow:auto;flex:1;min-height:0}
@@ -540,7 +542,7 @@ function render(){
   // stats
   const totVol=rows.reduce((s,a)=>s+a._c.vsum,0), totDep=rows.reduce((s,a)=>s+a._c.dsum,0);
   $("#statbar").innerHTML=`
-    <div class="stat"><div class="n g">${rows.length}</div><div class="l">Matching assets</div></div>
+    <div class="stat invert"><div class="n">${rows.length}</div><div class="l">Matching assets</div></div>
     <div class="stat"><div class="n">${rows.filter(a=>a._nselsrc>=2).length}</div><div class="l">Multi-source</div></div>
     <div class="stat"><div class="n">${fmtUSD(totVol)}</div><div class="l">Total 24h volume</div></div>
     <div class="stat"><div class="n">${fmtUSD(totDep)}</div><div class="l">Total depth ${bandLabel}</div></div>`;
