@@ -242,6 +242,8 @@ tbody tr.exp{background:var(--row-hover)}
 .copybtn:hover{background:var(--gray-100);color:var(--text);border-color:var(--gray-300)}
 .copybtn.done{background:var(--green-100);border-color:transparent;color:var(--green-500)}
 .exprow td{background:var(--exprow-bg);padding:0}
+.exp-anim{overflow:hidden;height:0;transition:height .28s ease}
+@media (prefers-reduced-motion:reduce){.exp-anim{transition:none}}
 .detail{padding:16px 18px;display:grid;grid-template-columns:1.1fr 1fr;gap:20px;text-align:left;white-space:normal}
 .detail>div{min-width:0}
 @media(max-width:820px){.detail{grid-template-columns:1fr}}
@@ -262,6 +264,14 @@ pre.curl{background:var(--curl-bg);border:1px solid var(--border-hi);border-radi
 @keyframes spin{to{transform:rotate(360deg)}}
 .srcneed{font-weight:500}
 .srcneed.n1{color:var(--green-500)}.srcneed.n2{color:var(--green-600)}.srcneed.n3{color:var(--yellow-500)}.srcneed.no{color:var(--red-500)}
+
+/* ── Page-load entrance: topbar → sidebar → table, overlapping stagger ── */
+@keyframes intro-up{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes intro-fade{from{opacity:0}to{opacity:1}}
+header.top{animation:intro-up .5s ease both}
+.filters{animation:intro-fade .5s ease .15s both}   /* opacity only — its transform belongs to the drawer */
+main{animation:intro-up .5s ease .3s both}
+@media (prefers-reduced-motion:reduce){header.top,.filters,main{animation:none}}
 
 /* ── Responsive overrides (kept at end so they win the cascade) ── */
 @media(max-width:1080px){
@@ -550,10 +560,21 @@ function render(){
   syncPresetHighlight();
 }
 
+function collapseRow(er){
+  const prev=er.previousElementSibling;
+  if(prev&&prev.classList.contains("exp"))prev.classList.remove("exp");
+  const w=er.querySelector(".exp-anim");
+  if(!w){er.remove();return;}
+  w.style.height=w.scrollHeight+"px"; w.offsetHeight;   // pin current height, then animate to 0
+  w.style.height="0px";
+  let done=false; const fin=()=>{if(!done){done=true;er.remove();}};
+  w.addEventListener("transitionend",fin,{once:true});
+  setTimeout(fin,400);                                   // fallback if transitionend never fires
+}
 function toggleDetail(tr,a,band,bandLabel){
   const nx=tr.nextElementSibling;
-  if(nx&&nx.classList.contains("exprow")){ nx.remove(); tr.classList.remove("exp"); return; }
-  $$(".exprow").forEach(e=>e.remove()); $$("tr.exp").forEach(e=>e.classList.remove("exp"));
+  if(nx&&nx.classList.contains("exprow")){ collapseRow(nx); return; }
+  $$(".exprow").forEach(collapseRow); $$("tr.exp").forEach(e=>e.classList.remove("exp"));
   tr.classList.add("exp");
   const er=document.createElement("tr"); er.className="exprow";
   const bands=[["50","±0.5%"],["100","±1%"],["200","±2%"]];
@@ -562,7 +583,7 @@ function toggleDetail(tr,a,band,bandLabel){
     return `<tr style="${on?'':'opacity:.4'}"><td class="l">${p.label}${on?'':' (excluded)'}</td>
       <td>${fmtUSD(a.vol[p.k]||0)}</td>${bands.map(([b])=>`<td>${fmtUSD((a.dep[b]&&a.dep[b][p.k])||0)}</td>`).join("")}</tr>`;
   }).join("");
-  er.innerHTML=`<td colspan="8"><div class="detail">
+  er.innerHTML=`<td colspan="8"><div class="exp-anim"><div class="detail">
     <div>
       <h4>Per-venue liquidity</h4>
       <table class="dtable"><thead><tr><th class="l">Venue</th><th>24h Vol</th><th>0.5%</th><th>1%</th><th>2%</th></tr></thead>
@@ -576,8 +597,13 @@ function toggleDetail(tr,a,band,bandLabel){
       <button class="btn green sm" style="margin-top:10px" data-tk="${a.ticker}" id="cbtn-${a.ticker}">Copy curl</button>
       <div class="mini" style="margin-top:8px">Median of resolved venue mids · ~3–4s latency · requires <code>$SEDA_FAST_API_KEY</code></div>
     </div>
-  </div></td>`;
+  </div></div></td>`;
   tr.after(er);
+  const w=er.querySelector(".exp-anim");
+  const h=w.scrollHeight;                                // full content height while clipped at 0
+  w.offsetHeight;                                        // commit the 0 start frame
+  w.style.height=h+"px";
+  w.addEventListener("transitionend",e=>{if(e.propertyName==="height")w.style.height="auto"},{once:true});
   er.querySelector(".btn.green").addEventListener("click",e=>copyCurl(a,e.target));
 }
 function escapeHtml(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
